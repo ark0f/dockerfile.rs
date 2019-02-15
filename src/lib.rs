@@ -1,17 +1,19 @@
 use std::{
     collections::HashMap,
     convert::From as StdFrom,
-    fmt::{self, Debug, Display},
+    fmt::{self, Display},
     hash::Hash,
 };
 
-pub trait Instruction: Debug + Display {}
+pub trait Instruction: Display {}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum TagOrDigest {
     Tag(String),
     Digest(String),
 }
+
+pub use TagOrDigest::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct From {
@@ -20,73 +22,13 @@ pub struct From {
     pub name: Option<String>,
 }
 
-impl<T> PartialEq<T> for From
-where
-    T: AsRef<str>,
-{
-    fn eq(&self, other: &T) -> bool {
-        // FROM rust:latest AS crab
-        // 1    2           3  4
-        // FROM rust
-        // 1    2
-
-        let vec: Vec<&str> = other.as_ref().split(' ').collect();
-        let len = vec.len();
-        match len {
-            2 | 4 => {
-                let from = vec[0].to_lowercase();
-                if from != "from" {
-                    return false;
-                }
-
-                let image = vec[1];
-                let limage;
-                if let Some(tod) = &self.tag_or_digest {
-                    match tod {
-                        TagOrDigest::Tag(tag) => limage = format!("{}:{}", self.image, tag),
-                        TagOrDigest::Digest(digest) => {
-                            limage = format!("{}@{}", self.image, digest)
-                        }
-                    }
-                } else {
-                    limage = self.image.clone();
-                }
-                if limage != *image {
-                    return false;
-                }
-
-                if len == 4 {
-                    let as_ = vec[2].to_lowercase();
-                    if as_ != "as" {
-                        return false;
-                    }
-
-                    let name = vec[3];
-                    if let Some(lname) = &self.name {
-                        if lname != name {
-                            return false;
-                        }
-                    }
-                }
-
-                true
-            }
-            _ => false,
-        }
-    }
-}
-
 impl Display for From {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match (&self.tag_or_digest, &self.name) {
-            (Some(TagOrDigest::Tag(tag)), None) => write!(f, "FROM {}:{}", self.image, tag),
-            (Some(TagOrDigest::Tag(tag)), Some(name)) => {
-                write!(f, "FROM {}:{} AS {}", self.image, tag, name)
-            }
-            (Some(TagOrDigest::Digest(digest)), None) => {
-                write!(f, "FROM {}@{}", self.image, digest)
-            }
-            (Some(TagOrDigest::Digest(digest)), Some(name)) => {
+            (Some(Tag(tag)), None) => write!(f, "FROM {}:{}", self.image, tag),
+            (Some(Tag(tag)), Some(name)) => write!(f, "FROM {}:{} AS {}", self.image, tag, name),
+            (Some(Digest(digest)), None) => write!(f, "FROM {}@{}", self.image, digest),
+            (Some(Digest(digest)), Some(name)) => {
                 write!(f, "FROM {}@{} AS {}", self.image, digest, name)
             }
             (None, None) => write!(f, "FROM {}", self.image),
@@ -96,29 +38,50 @@ impl Display for From {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
+pub struct Run {
+    pub params: Vec<String>,
+}
+
+impl<I, S> StdFrom<I> for Run
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
+    fn from(iter: I) -> Self {
+        let params = iter.into_iter().map(|i| i.as_ref().to_string()).collect();
+        Run { params }
+    }
+}
+
+impl Display for Run {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "RUN [{}]",
+            self.params
+                .iter()
+                .map(|i| format!(r#""{}""#, i))
+                .collect::<Vec<String>>()
+                .join(", ")
+        )
+    }
+}
+
+impl Instruction for Run {}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Cmd {
     pub params: Vec<String>,
 }
 
-impl<T> StdFrom<T> for Cmd
+impl<I, S> StdFrom<I> for Cmd
 where
-    T: AsRef<str>,
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
 {
-    fn from(s: T) -> Self {
-        let params = s.as_ref().split(' ').map(String::from).collect();
+    fn from(iter: I) -> Self {
+        let params = iter.into_iter().map(|i| i.as_ref().to_string()).collect();
         Cmd { params }
-    }
-}
-
-impl<T> PartialEq<T> for Cmd
-where
-    T: AsRef<str>,
-{
-    fn eq(&self, other: &T) -> bool {
-        self.params
-            .iter()
-            .zip(other.as_ref().split(' '))
-            .all(|(l, r)| l == r)
     }
 }
 
@@ -160,7 +123,7 @@ where
 impl<K, V> StdFrom<(K, V)> for Label
 where
     K: AsRef<str> + Eq + Hash,
-    V: AsRef<str>
+    V: AsRef<str>,
 {
     fn from((k, v): (K, V)) -> Self {
         let mut inner = HashMap::new();
@@ -191,15 +154,6 @@ pub struct Maintainer {
     pub name: String,
 }
 
-impl<T> PartialEq<T> for Maintainer
-where
-    T: AsRef<str>
-{
-    fn eq(&self, other: &T) -> bool {
-        self.name == other.as_ref()
-    }
-}
-
 impl PartialEq<Label> for Maintainer {
     fn eq(&self, other: &Label) -> bool {
         if let Some(name) = other.inner.get("maintainer") {
@@ -222,26 +176,6 @@ pub struct Expose {
     pub proto: String,
 }
 
-impl<T> PartialEq<T> for Expose
-where
-    T: AsRef<str>
-{
-    fn eq(&self, other: &T) -> bool {
-        let vec: Vec<&str> = other.as_ref().split('/').collect();
-        if vec.len() == 2 {
-            let port = vec[0].parse::<u16>();
-            let port = match port {
-                Ok(port) => port == self.port,
-                Err(_) => false,
-            };
-
-            self.proto == vec[1] && port
-        } else {
-            false
-        }
-    }
-}
-
 impl Display for Expose {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "EXPOSE {}/{}", self.port, self.proto)
@@ -250,15 +184,15 @@ impl Display for Expose {
 
 impl Instruction for Expose {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Env {
     inner: HashMap<String, String>,
 }
 
 impl<K, V> StdFrom<HashMap<K, V>> for Env
-    where
-        K: AsRef<str> + Eq + Hash,
-        V: AsRef<str>,
+where
+    K: AsRef<str> + Eq + Hash,
+    V: AsRef<str>,
 {
     fn from(map: HashMap<K, V>) -> Self {
         let inner = map
@@ -270,9 +204,9 @@ impl<K, V> StdFrom<HashMap<K, V>> for Env
 }
 
 impl<K, V> StdFrom<(K, V)> for Env
-    where
-        K: AsRef<str> + Eq + Hash,
-        V: AsRef<str>
+where
+    K: AsRef<str> + Eq + Hash,
+    V: AsRef<str>,
 {
     fn from((k, v): (K, V)) -> Self {
         let mut inner = HashMap::new();
@@ -297,7 +231,7 @@ impl Display for Env {
 
 impl Instruction for Env {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Add {
     pub src: String,
     pub dst: String,
@@ -307,7 +241,14 @@ pub struct Add {
 impl Display for Add {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self.chown {
-            Some(chown) => write!(f, r#"ADD {} "{}" "{}""#, chown, self.src, self.dst),
+            Some(chown) => write!(
+                f,
+                r#"ADD --chown={}{} "{}" "{}""#,
+                chown.user,
+                chown.group.clone().unwrap_or_default(),
+                self.src,
+                self.dst
+            ),
             None => write!(f, r#"ADD "{}" "{}""#, self.src, self.dst),
         }
     }
@@ -315,7 +256,7 @@ impl Display for Add {
 
 impl Instruction for Add {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Copy {
     pub src: String,
     pub dst: String,
@@ -325,7 +266,14 @@ pub struct Copy {
 impl Display for Copy {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self.chown {
-            Some(chown) => write!(f, r#"COPY {} "{}" "{}""#, chown, self.src, self.dst),
+            Some(chown) => write!(
+                f,
+                r#"COPY --chown={}{} "{}" "{}""#,
+                chown.user,
+                chown.group.clone().unwrap_or_default(),
+                self.src,
+                self.dst
+            ),
             None => write!(f, r#"COPY "{}" "{}""#, self.src, self.dst),
         }
     }
@@ -333,9 +281,19 @@ impl Display for Copy {
 
 impl Instruction for Copy {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct EntryPoint {
-    inner: Vec<String>,
+    params: Vec<String>,
+}
+
+impl<T> StdFrom<T> for EntryPoint
+where
+    T: AsRef<str>,
+{
+    fn from(s: T) -> Self {
+        let params = s.as_ref().split(' ').map(String::from).collect();
+        EntryPoint { params }
+    }
 }
 
 impl Display for EntryPoint {
@@ -343,7 +301,7 @@ impl Display for EntryPoint {
         write!(
             f,
             "ENTRYPOINT [{}]",
-            self.inner
+            self.params
                 .iter()
                 .map(|i| format!(r#""{}""#, i))
                 .collect::<Vec<String>>()
@@ -354,17 +312,27 @@ impl Display for EntryPoint {
 
 impl Instruction for EntryPoint {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Volume {
-    inner: Vec<String>,
+    pub paths: Vec<String>,
+}
+
+impl<T> StdFrom<Vec<T>> for Volume
+where
+    T: AsRef<str>,
+{
+    fn from(vec: Vec<T>) -> Self {
+        let paths = vec.iter().map(AsRef::as_ref).map(String::from).collect();
+        Volume { paths }
+    }
 }
 
 impl Display for Volume {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "VOLUME {}",
-            self.inner
+            "VOLUME [{}]",
+            self.paths
                 .iter()
                 .map(|i| format!(r#""{}""#, i))
                 .collect::<Vec<String>>()
@@ -375,7 +343,7 @@ impl Display for Volume {
 
 impl Instruction for Volume {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct User {
     pub user: String,
     pub group: Option<String>,
@@ -392,20 +360,30 @@ impl Display for User {
 
 impl Instruction for User {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct WorkDir {
     pub path: String,
 }
 
+impl<T> StdFrom<T> for WorkDir
+where
+    T: AsRef<str>,
+{
+    fn from(s: T) -> Self {
+        let path = s.as_ref().to_string();
+        WorkDir { path }
+    }
+}
+
 impl Display for WorkDir {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "WORKDIR {}", self.path)
+        write!(f, r#"WORKDIR "{}""#, self.path)
     }
 }
 
 impl Instruction for WorkDir {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Arg {
     pub name: String,
     pub value: Option<String>,
@@ -422,20 +400,30 @@ impl Display for Arg {
 
 impl Instruction for Arg {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct StopSignal {
-    inner: String,
+    pub signal: String,
+}
+
+impl<T> StdFrom<T> for StopSignal
+where
+    T: AsRef<str>,
+{
+    fn from(s: T) -> Self {
+        let signal = s.as_ref().to_string();
+        StopSignal { signal }
+    }
 }
 
 impl Display for StopSignal {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "STOPSIGNAL {}", self.inner)
+        write!(f, "STOPSIGNAL {}", self.signal)
     }
 }
 
 impl Instruction for StopSignal {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum HealthCheck {
     Check {
         cmd: Cmd,
@@ -477,9 +465,20 @@ impl Display for HealthCheck {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Shell {
-    inner: Vec<String>,
+    pub params: Vec<String>,
+}
+
+impl<I, S> StdFrom<I> for Shell
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
+    fn from(iter: I) -> Self {
+        let params = iter.into_iter().map(|i| i.as_ref().to_string()).collect();
+        Shell { params }
+    }
 }
 
 impl Display for Shell {
@@ -487,7 +486,7 @@ impl Display for Shell {
         write!(
             f,
             "SHELL [{}]",
-            self.inner
+            self.params
                 .iter()
                 .map(|i| format!(r#""{}""#, i))
                 .collect::<Vec<String>>()
@@ -496,9 +495,20 @@ impl Display for Shell {
     }
 }
 
-#[derive(Debug)]
+impl Instruction for Shell {}
+
 pub struct OnBuild {
     inner: Box<Instruction>,
+}
+
+impl<I> StdFrom<I> for OnBuild
+where
+    I: Instruction + 'static,
+{
+    fn from(i: I) -> Self {
+        let inner = Box::new(i);
+        OnBuild { inner }
+    }
 }
 
 impl Display for OnBuild {
@@ -524,7 +534,7 @@ mod tests {
             tag_or_digest: tag.clone(),
             name: None,
         };
-        assert_eq!(from, "FROM rust:latest");
+        assert_eq!(from.to_string(), "FROM rust:latest");
 
         // tag and name
         let from = From {
@@ -532,7 +542,7 @@ mod tests {
             tag_or_digest: tag.clone(),
             name: name.clone(),
         };
-        assert_eq!(from, "FROM rust:latest AS crab");
+        assert_eq!(from.to_string(), "FROM rust:latest AS crab");
 
         // digest and no name
         let from = From {
@@ -540,7 +550,7 @@ mod tests {
             tag_or_digest: digest.clone(),
             name: None,
         };
-        assert_eq!(from, "FROM rust@digest");
+        assert_eq!(from.to_string(), "FROM rust@digest");
 
         // digest and name
         let from = From {
@@ -548,7 +558,7 @@ mod tests {
             tag_or_digest: digest.clone(),
             name: name.clone(),
         };
-        assert_eq!(from, "FROM rust@digest AS crab");
+        assert_eq!(from.to_string(), "FROM rust@digest AS crab");
 
         // no tag or digest and no name
         let from = From {
@@ -556,7 +566,7 @@ mod tests {
             tag_or_digest: None,
             name: None,
         };
-        assert_eq!(from, "FROM rust");
+        assert_eq!(from.to_string(), "FROM rust");
 
         // no tag or digest and name
         let from = From {
@@ -564,17 +574,25 @@ mod tests {
             tag_or_digest: None,
             name: name.clone(),
         };
-        assert_eq!(from, "FROM rust AS crab");
+        assert_eq!(from.to_string(), "FROM rust AS crab");
+    }
 
-        assert_ne!(from, "some_string")
+    #[test]
+    fn run() {
+        let curl = &["curl", "-v", "https://rust-lang.org"];
+        let run = Run::from(curl);
+        assert_eq!(run.params, ["curl", "-v", "https://rust-lang.org"]);
+        assert_eq!(
+            run.to_string(),
+            r#"RUN ["curl", "-v", "https://rust-lang.org"]"#
+        )
     }
 
     #[test]
     fn cmd() {
-        let curl = "curl -v https://rust-lang.org";
+        let curl = &["curl", "-v", "https://rust-lang.org"];
         let cmd = Cmd::from(curl);
         assert_eq!(cmd.params, ["curl", "-v", "https://rust-lang.org"]);
-        assert_eq!(cmd, curl);
         assert_eq!(
             cmd.to_string(),
             r#"CMD ["curl", "-v", "https://rust-lang.org"]"#
@@ -585,16 +603,14 @@ mod tests {
     fn label() {
         let mut map = HashMap::new();
         map.insert("key", "value");
-        map.insert("hello", "world");
         let label = Label::from(map.clone());
-        assert_eq!(label.to_string(), r#"LABEL hello="world" key="value""#);
+        assert_eq!(label.to_string(), r#"LABEL key="value""#);
     }
 
     #[test]
     fn maintainer() {
         let name = String::from("Someone Rustcean");
         let maintainer = Maintainer { name: name.clone() };
-        assert_eq!(maintainer, name);
         assert_eq!(maintainer.to_string(), "MAINTAINER Someone Rustcean");
         assert_eq!(maintainer, Label::from(("maintainer", name)))
     }
@@ -604,7 +620,6 @@ mod tests {
         let port = 80;
         let proto = String::from("tcp");
         let expose = Expose { port, proto };
-        assert_eq!(expose, "80/tcp");
         assert_eq!(expose.to_string(), "EXPOSE 80/tcp")
     }
 
@@ -612,8 +627,167 @@ mod tests {
     fn env() {
         let mut map = HashMap::new();
         map.insert("key", "value");
-        map.insert("hello", "world");
         let label = Env::from(map.clone());
-        assert_eq!(label.to_string(), r#"ENV hello="world" key="value""#);
+        assert_eq!(label.to_string(), r#"ENV key="value""#);
+    }
+
+    #[test]
+    fn add() {
+        let chown = User {
+            user: "rustcean".to_string(),
+            group: None,
+        };
+        let src = "/home/container001".to_string();
+        let dst = "/".to_string();
+
+        // with chown
+        let add = Add {
+            src: src.clone(),
+            dst: dst.clone(),
+            chown: Some(chown),
+        };
+        assert_eq!(
+            add.to_string(),
+            r#"ADD --chown=rustcean "/home/container001" "/""#
+        );
+
+        // without chown
+        let add = Add {
+            src,
+            dst,
+            chown: None,
+        };
+        assert_eq!(add.to_string(), r#"ADD "/home/container001" "/""#);
+    }
+
+    #[test]
+    fn copy() {
+        let chown = User {
+            user: "rustcean".to_string(),
+            group: None,
+        };
+        let src = "/home/container001".to_string();
+        let dst = "/".to_string();
+
+        // with chown
+        let copy = Copy {
+            src: src.clone(),
+            dst: dst.clone(),
+            chown: Some(chown),
+        };
+        assert_eq!(
+            copy.to_string(),
+            r#"COPY --chown=rustcean "/home/container001" "/""#
+        );
+
+        // without chown
+        let copy = Copy {
+            src,
+            dst,
+            chown: None,
+        };
+        assert_eq!(copy.to_string(), r#"COPY "/home/container001" "/""#);
+    }
+
+    #[test]
+    fn entrypoint() {
+        let curl = "curl -v https://rust-lang.org";
+        let point = EntryPoint::from(curl);
+        assert_eq!(point.params, ["curl", "-v", "https://rust-lang.org"]);
+        assert_eq!(
+            point.to_string(),
+            r#"ENTRYPOINT ["curl", "-v", "https://rust-lang.org"]"#
+        )
+    }
+
+    #[test]
+    fn volume() {
+        let paths = vec!["/var/run"];
+        let volume = Volume::from(paths);
+        assert_eq!(volume.to_string(), r#"VOLUME ["/var/run"]"#);
+    }
+
+    #[test]
+    fn user() {
+        let user = "rustcean".to_string();
+        let group = Some("root".to_string());
+
+        // with group
+        let usr = User {
+            user: user.clone(),
+            group,
+        };
+        assert_eq!(usr.to_string(), "USER rustcean:root");
+
+        // without group
+        let usr = User { user, group: None };
+        assert_eq!(usr.to_string(), "USER rustcean");
+    }
+
+    #[test]
+    fn workdir() {
+        let path = "/var/run";
+        let dir = WorkDir::from(path);
+        assert_eq!(dir.to_string(), r#"WORKDIR "/var/run""#)
+    }
+
+    #[test]
+    fn arg() {
+        let name = "name".to_string();
+        let value = Some("value".to_string());
+
+        // with value
+        let arg = Arg {
+            name: name.clone(),
+            value,
+        };
+        assert_eq!(arg.to_string(), r#"ARG name="value""#);
+
+        // without value
+        let arg = Arg { name, value: None };
+        assert_eq!(arg.to_string(), r#"ARG name"#);
+    }
+
+    #[test]
+    fn stopsignal() {
+        let signal = "SIGKILL".to_string();
+        let signal = StopSignal::from(signal);
+        assert_eq!(signal.to_string(), "STOPSIGNAL SIGKILL");
+    }
+
+    #[test]
+    fn healthcheck() {
+        // with params
+        let cmd = Cmd::from(&["curl", "-v", "https://rust-lang.org"]);
+        let check = HealthCheck::Check {
+            cmd,
+            interval: Some(0),
+            timeout: Some(3600),
+            start_period: Some(123),
+            retries: Some(2),
+        };
+        assert_eq!(check.to_string(), r#"HEALTHCHECK --interval=0 --timeout=3600 --start-period=123 --retries=2 CMD ["curl", "-v", "https://rust-lang.org"]"#);
+
+        // without params
+        let check = HealthCheck::None;
+        assert_eq!(check.to_string(), "HEALTHCHECK NONE");
+    }
+
+    #[test]
+    fn shell() {
+        let bash = &["bash", "-c"];
+        let shell = Shell::from(bash);
+        assert_eq!(shell.params, ["bash", "-c"]);
+        assert_eq!(shell.to_string(), r#"SHELL ["bash", "-c"]"#)
+    }
+
+    #[test]
+    fn onbuild() {
+        let cmd = Cmd::from(&["curl", "-v", "https://rust-lang.org"]);
+        let onbuild = OnBuild::from(cmd);
+        assert_eq!(
+            onbuild.to_string(),
+            r#"ONBUILD CMD ["curl", "-v", "https://rust-lang.org"]"#
+        );
     }
 }
