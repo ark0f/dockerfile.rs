@@ -1,3 +1,9 @@
+mod builder;
+
+pub mod macros;
+
+pub use builder::DockerFile;
+
 use std::{
     collections::HashMap,
     convert::From as StdFrom,
@@ -114,7 +120,7 @@ where
     fn from(map: HashMap<K, V>) -> Self {
         let inner = map
             .iter()
-            .map(|(k, v)| (String::from(k.as_ref()), String::from(v.as_ref())))
+            .map(|(k, v)| (String::from(k.as_ref()), v.as_ref().replace('\n', "\\\n")))
             .collect();
         Label { inner }
     }
@@ -154,6 +160,16 @@ pub struct Maintainer {
     pub name: String,
 }
 
+impl<T> StdFrom<T> for Maintainer
+where
+    T: AsRef<str>,
+{
+    fn from(s: T) -> Self {
+        let name = s.as_ref().to_string();
+        Maintainer { name }
+    }
+}
+
 impl PartialEq<Label> for Maintainer {
     fn eq(&self, other: &Label) -> bool {
         if let Some(name) = other.inner.get("maintainer") {
@@ -174,6 +190,15 @@ impl Display for Maintainer {
 pub struct Expose {
     pub port: u16,
     pub proto: String,
+}
+
+impl StdFrom<u16> for Expose {
+    fn from(port: u16) -> Self {
+        Expose {
+            port,
+            proto: String::from("tcp"),
+        }
+    }
 }
 
 impl Display for Expose {
@@ -260,21 +285,34 @@ impl Instruction for Add {}
 pub struct Copy {
     pub src: String,
     pub dst: String,
+    pub from: Option<String>,
     pub chown: Option<User>,
 }
 
 impl Display for Copy {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match &self.chown {
-            Some(chown) => write!(
+        match (&self.from, &self.chown) {
+            (Some(from), Some(chown)) => write!(
                 f,
-                r#"COPY --chown={}{} "{}" "{}""#,
+                r#"COPY --from={} --chown={}{} "{}" "{}""#,
+                from,
                 chown.user,
-                chown.group.clone().unwrap_or_default(),
+                chown.group.clone().map(|group| format!(":{}", group)).unwrap_or_default(),
                 self.src,
                 self.dst
             ),
-            None => write!(f, r#"COPY "{}" "{}""#, self.src, self.dst),
+            (Some(from), None) => {
+                write!(f, r#"COPY --from={} "{}" "{}""#, from, self.src, self.dst)
+            }
+            (None, Some(chown)) => write!(
+                f,
+                r#"COPY --chown={}{} "{}" "{}""#,
+                chown.user,
+                chown.group.clone().map(|group| format!(":{}", group)).unwrap_or_default(),
+                self.src,
+                self.dst
+            ),
+            (None, None) => write!(f, r#"COPY "{}" "{}""#, self.src, self.dst),
         }
     }
 }
@@ -286,12 +324,13 @@ pub struct EntryPoint {
     params: Vec<String>,
 }
 
-impl<T> StdFrom<T> for EntryPoint
+impl<I, S> StdFrom<I> for EntryPoint
 where
-    T: AsRef<str>,
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
 {
-    fn from(s: T) -> Self {
-        let params = s.as_ref().split(' ').map(String::from).collect();
+    fn from(iter: I) -> Self {
+        let params = iter.into_iter().map(|i| i.as_ref().to_string()).collect();
         EntryPoint { params }
     }
 }
@@ -317,12 +356,13 @@ pub struct Volume {
     pub paths: Vec<String>,
 }
 
-impl<T> StdFrom<Vec<T>> for Volume
+impl<I, S> StdFrom<I> for Volume
 where
-    T: AsRef<str>,
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
 {
-    fn from(vec: Vec<T>) -> Self {
-        let paths = vec.iter().map(AsRef::as_ref).map(String::from).collect();
+    fn from(iter: I) -> Self {
+        let paths = iter.into_iter().map(|i| i.as_ref().to_string()).collect();
         Volume { paths }
     }
 }
@@ -387,6 +427,21 @@ impl Instruction for WorkDir {}
 pub struct Arg {
     pub name: String,
     pub value: Option<String>,
+}
+
+impl<K, V> StdFrom<(K, V)> for Arg
+where
+    K: AsRef<str>,
+    V: AsRef<str>,
+{
+    fn from((k, v): (K, V)) -> Self {
+        let name = k.as_ref().to_string();
+        let value = v.as_ref().to_string();
+        Arg {
+            name,
+            value: Some(value),
+        }
+    }
 }
 
 impl Display for Arg {
@@ -464,6 +519,8 @@ impl Display for HealthCheck {
         }
     }
 }
+
+impl Instruction for HealthCheck {}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Shell {
@@ -605,12 +662,19 @@ mod tests {
         map.insert("key", "value");
         let label = Label::from(map.clone());
         assert_eq!(label.to_string(), r#"LABEL key="value""#);
+
+        let mut map = HashMap::new();
+        map.insert("key", "1\n2\n3");
+        let label = Label::from(map.clone());
+        assert_eq!(label.to_string(), r#"LABEL key="1\
+2\
+3""#);
     }
 
     #[test]
     fn maintainer() {
         let name = String::from("Someone Rustcean");
-        let maintainer = Maintainer { name: name.clone() };
+        let maintainer = Maintainer::from(name.clone());
         assert_eq!(maintainer.to_string(), "MAINTAINER Someone Rustcean");
         assert_eq!(maintainer, Label::from(("maintainer", name)))
     }
@@ -662,28 +726,55 @@ mod tests {
 
     #[test]
     fn copy() {
-        let chown = User {
+        let from = Some("crab".to_string());
+        let chown = Some(User {
             user: "rustcean".to_string(),
-            group: None,
-        };
+            group: Some("root".to_string()),
+        });
         let src = "/home/container001".to_string();
         let dst = "/".to_string();
+
+        // with from and with chown
+        let copy = Copy {
+            src: src.clone(),
+            dst: dst.clone(),
+            from: from.clone(),
+            chown: chown.clone(),
+        };
+        assert_eq!(
+            copy.to_string(),
+            r#"COPY --from=crab --chown=rustcean:root "/home/container001" "/""#
+        );
+
+        // with from
+        let copy = Copy {
+            src: src.clone(),
+            dst: dst.clone(),
+            from: from.clone(),
+            chown: None,
+        };
+        assert_eq!(
+            copy.to_string(),
+            r#"COPY --from=crab "/home/container001" "/""#
+        );
 
         // with chown
         let copy = Copy {
             src: src.clone(),
             dst: dst.clone(),
-            chown: Some(chown),
+            from: None,
+            chown: chown.clone(),
         };
         assert_eq!(
             copy.to_string(),
-            r#"COPY --chown=rustcean "/home/container001" "/""#
+            r#"COPY --chown=rustcean:root "/home/container001" "/""#
         );
 
-        // without chown
+        // without from and without chown
         let copy = Copy {
-            src,
-            dst,
+            src: src.clone(),
+            dst: dst.clone(),
+            from: None,
             chown: None,
         };
         assert_eq!(copy.to_string(), r#"COPY "/home/container001" "/""#);
@@ -691,7 +782,7 @@ mod tests {
 
     #[test]
     fn entrypoint() {
-        let curl = "curl -v https://rust-lang.org";
+        let curl = &["curl", "-v", "https://rust-lang.org"];
         let point = EntryPoint::from(curl);
         assert_eq!(point.params, ["curl", "-v", "https://rust-lang.org"]);
         assert_eq!(
