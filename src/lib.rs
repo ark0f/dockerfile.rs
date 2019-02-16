@@ -297,7 +297,11 @@ impl Display for Copy {
                 r#"COPY --from={} --chown={}{} "{}" "{}""#,
                 from,
                 chown.user,
-                chown.group.clone().map(|group| format!(":{}", group)).unwrap_or_default(),
+                chown
+                    .group
+                    .clone()
+                    .map(|group| format!(":{}", group))
+                    .unwrap_or_default(),
                 self.src,
                 self.dst
             ),
@@ -308,7 +312,11 @@ impl Display for Copy {
                 f,
                 r#"COPY --chown={}{} "{}" "{}""#,
                 chown.user,
-                chown.group.clone().map(|group| format!(":{}", group)).unwrap_or_default(),
+                chown
+                    .group
+                    .clone()
+                    .map(|group| format!(":{}", group))
+                    .unwrap_or_default(),
                 self.src,
                 self.dst
             ),
@@ -666,9 +674,12 @@ mod tests {
         let mut map = HashMap::new();
         map.insert("key", "1\n2\n3");
         let label = Label::from(map.clone());
-        assert_eq!(label.to_string(), r#"LABEL key="1\
+        assert_eq!(
+            label.to_string(),
+            r#"LABEL key="1\
 2\
-3""#);
+3""#
+        );
     }
 
     #[test]

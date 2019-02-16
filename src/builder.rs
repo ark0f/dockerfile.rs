@@ -2,13 +2,13 @@ use crate::{
     Add, Arg, Cmd, Copy, EntryPoint, Env, Expose, From, HealthCheck, Instruction, Label,
     Maintainer, OnBuild, Run, Shell, StopSignal, User, Volume, WorkDir,
 };
-use std::io;
+use std::fmt::{self, Display};
 
 pub struct DockerFile {
     from: From,
     maintainer: Option<Maintainer>,
     instructions: Vec<Box<Instruction>>,
-    on_build: Vec<OnBuild>,
+    on_builds: Vec<OnBuild>,
 }
 
 impl DockerFile {
@@ -17,7 +17,7 @@ impl DockerFile {
             from,
             maintainer: None,
             instructions: Vec::new(),
-            on_build: Vec::new(),
+            on_builds: Vec::new(),
         }
     }
 
@@ -93,39 +93,46 @@ impl DockerFile {
     }
 
     pub fn on_build<T: Into<OnBuild> + 'static>(mut self, on_build: T) -> Self {
-        self.on_build.push(on_build.into());
+        self.on_builds.push(on_build.into());
         self
     }
+}
 
-    pub fn write_to<W: io::Write>(&self, w: &mut W) -> io::Result<()> {
-        writeln!(w, "{}", self.from)?;
-        writeln!(w)?;
+impl Display for DockerFile {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "{}", self.from)?;
+        writeln!(f)?;
 
         if let Some(maintainer) = &self.maintainer {
-            writeln!(w, "{}", maintainer)?;
-            writeln!(w)?;
+            writeln!(f, "{}", maintainer)?;
+            writeln!(f)?;
         }
 
         for instruction in &self.instructions {
-            writeln!(w, "{}", instruction)?;
+            writeln!(f, "{}", instruction)?;
+        }
+
+        if !self.on_builds.is_empty() {
+            writeln!(f)?;
+            for on_build in &self.on_builds {
+                writeln!(f, "{}", on_build)?;
+            }
         }
 
         Ok(())
     }
 }
 
-/*#[cfg(test)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::Tag;
-    use std::fs::File;
 
     #[test]
     fn builder() {
-        let mut file = File::create("test.Dockerfile").unwrap();
-        Dockerfile::from(From {
+        let content = DockerFile::from(From {
             image: String::from("rust"),
-            tag_or_digest: Some(Tag("lastest".to_string())),
+            tag_or_digest: Some(Tag("latest".to_string())),
             name: None,
         })
         .maintainer("lead rustcean")
@@ -142,6 +149,7 @@ mod tests {
         .copy(Copy {
             src: "/var/run".to_string(),
             dst: "/home".to_string(),
+            from: None,
             chown: None,
         })
         .entry_point(&["cargo", "check"])
@@ -159,6 +167,31 @@ mod tests {
             "echo",
             "This is the ONBUILD command",
         ])))
-        .write_to(&mut file);
+        .to_string();
+        assert_eq!(
+            content,
+            r#"FROM rust:latest
+
+MAINTAINER lead rustcean
+
+RUN ["/bin/bash", "-c", "echo"]
+CMD ["echo", "Hi!"]
+LABEL key="value"
+EXPOSE 80/tcp
+ENV RUST="1.0.0"
+ADD "/var/run" "/home"
+COPY "/var/run" "/home"
+ENTRYPOINT ["cargo", "check"]
+VOLUME ["/var/run", "/var/www"]
+USER rustcean
+WORKDIR "/home/rustcean"
+ARG build="yes"
+STOPSIGNAL SIGKILL
+HEALTHCHECK NONE
+SHELL ["/bin/bash", "-c"]
+
+ONBUILD CMD ["echo", "This is the ONBUILD command"]
+"#
+        );
     }
-}*/
+}

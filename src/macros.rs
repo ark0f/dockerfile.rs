@@ -436,13 +436,11 @@ mod tests {
 
     #[test]
     fn docker_file() {
-        let mut vec = Vec::<u8>::new();
         let file = Dockerfile!(
             FROM FROM!(rust:latest),
             LABEL!["key" => "value"]
         );
-        file.write_to(&mut vec).unwrap();
-        let content: String = vec.iter().map(|&c| c as char).collect();
+        let content = file.to_string();
         assert_eq!(
             content,
             r#"FROM rust:latest
@@ -451,14 +449,12 @@ LABEL key="value"
 "#
         );
 
-        let mut vec = Vec::<u8>::new();
         let file = Dockerfile!(
             FROM FROM!(rust:latest),
             MAINTAINER MAINTAINER!("Funny Rustcean"),
             LABEL!["key" => "value"]
         );
-        file.write_to(&mut vec).unwrap();
-        let content: String = vec.iter().map(|&c| c as char).collect();
+        let content = file.to_string();
         assert_eq!(
             content,
             r#"FROM rust:latest
