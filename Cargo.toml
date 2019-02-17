@@ -1,6 +1,6 @@
 [package]
 name = "dockerfile-rs"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Arsenii Lyashenko <arsenylyashenko.3@gmail.com>"]
 description = "Docker file generator"
 license = "Apache-2.0 OR MIT"
