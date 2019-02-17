@@ -1,0 +1,26 @@
+language: rust
+cache:
+    - cargo
+rust:
+    - stable
+    - beta
+    - nightly
+
+matrix:
+    fast_finish: true
+    allow_failures:
+        - rust: nightly
+
+script:
+    - cargo build -v --all
+
+before_cache: |
+    if [[ "$TRAVIS_RUST_VERSION" == nightly ]]
+    then
+        RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin -f
+        cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID
+        cargo tarpaulin --out Xml
+        bash <(curl -s https://codecov.io/bash)
+    else
+        cargo test -v --all
+    fi
