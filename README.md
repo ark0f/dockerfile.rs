@@ -7,6 +7,8 @@
 
 Docker file generator
 
+# [Changelog](https://github.com/ark0f/dockerfile.rs/blob/master/CHANGELOG.md)
+
 # License
 dockerfile-rs under either of:
 
