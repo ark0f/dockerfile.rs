@@ -1,6 +1,6 @@
 # dockerfile-rs
 [![Build Status](https://travis-ci.org/ark0f/dockerfile.rs.svg?branch=master)](https://travis-ci.org/ark0f/dockerfile.rs)
-![License](https://img.shields.io/crates/l/dockerfile-rs.svg)
+![License](https://img.shields.io/crates/l/dockerfile_rs.svg)
 [![crates.io](https://img.shields.io/crates/v/dockerfile-rs.svg)](https://crates.io/crates/dockerfile-rs)
 [![API docs](https://docs.rs/dockerfile-rs/badge.svg)](https://docs.rs/dockerfile-rs)
 [![Codecov](https://codecov.io/gh/ark0f/dockerfile.rs/branch/master/graph/badge.svg)](https://codecov.io/gh/ark0f/dockerfile.rs)
