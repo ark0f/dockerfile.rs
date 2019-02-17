@@ -8,7 +8,7 @@ repository = "https://github.com/ark0f/dockerfile.rs"
 documentation = "https://docs.rs/dockerfile-rs"
 readme = "README.md"
 keywords = ["docker", "dockerfile", "generator"]
-categories = ["configuration"]
+categories = ["config"]
 include = ["LICENSE-*.md", "Cargo.toml", "src/**/*.rs"]
 edition = "2018"
 
