@@ -3,7 +3,7 @@
 ![License](https://img.shields.io/crates/l/dockerfile-rs.svg)
 [![crates.io](https://img.shields.io/crates/v/dockerfile-rs.svg)](https://crates.io/crates/dockerfile-rs)
 [![API docs](https://docs.rs/dockerfile-rs/badge.svg)](https://docs.rs/dockerfile-rs)
-[![Codecov](https://codecov.io/gh/ark0f/dockerfile-rs/branch/master/graph/badge.svg)](https://codecov.io/gh/ark0f/dockerfile-rs)
+[![Codecov](https://codecov.io/gh/ark0f/dockerfile.rs/branch/master/graph/badge.svg)](https://codecov.io/gh/ark0f/dockerfile.rs)
 
 Docker file generator
 
