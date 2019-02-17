@@ -1,5 +1,5 @@
 [package]
-name = "dockerfile.rs"
+name = "dockerfile-rs"
 version = "0.1.0"
 authors = ["Arsenii Lyashenko <arsenylyashenko.3@gmail.com>"]
 include = ["LICENSE-*.md", "Cargo.toml", "src/**/*.rs"]

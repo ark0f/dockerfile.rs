@@ -147,7 +147,7 @@ impl Display for Label {
                 .iter()
                 .map(|(k, v)| format!(r#"{}="{}""#, k, v))
                 .collect::<Vec<String>>()
-                .join(" ")
+                .join(" \\\n      ")
         )
     }
 }
@@ -668,17 +668,31 @@ mod tests {
     fn label() {
         let mut map = HashMap::new();
         map.insert("key", "value");
-        let label = Label::from(map.clone());
+        let label = Label::from(map);
         assert_eq!(label.to_string(), r#"LABEL key="value""#);
 
         let mut map = HashMap::new();
         map.insert("key", "1\n2\n3");
-        let label = Label::from(map.clone());
+        let label = Label::from(map);
         assert_eq!(
             label.to_string(),
             r#"LABEL key="1\
 2\
 3""#
+        );
+
+        let mut map = HashMap::new();
+        map.insert("key", "value");
+        map.insert("hello", "world");
+        let label = Label::from(map);
+        let label = label.to_string();
+        assert!(
+            label
+                == r#"LABEL hello="world" \
+      key="value""#
+                || label
+                    == r#"LABEL key="value" \
+      hello="world""#
         );
     }
 
