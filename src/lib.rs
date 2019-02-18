@@ -193,21 +193,26 @@ impl Display for Maintainer {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Expose {
     pub port: u16,
-    pub proto: String,
+    pub proto: Option<String>,
 }
 
 impl StdFrom<u16> for Expose {
     fn from(port: u16) -> Self {
-        Expose {
-            port,
-            proto: String::from("tcp"),
-        }
+        Expose { port, proto: None }
     }
 }
 
 impl Display for Expose {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "EXPOSE {}/{}", self.port, self.proto)
+        write!(
+            f,
+            "EXPOSE {}{}",
+            self.port,
+            self.proto
+                .clone()
+                .map(|s| format!("/{}", s))
+                .unwrap_or_default()
+        )
     }
 }
 
@@ -722,7 +727,13 @@ mod tests {
     #[test]
     fn expose() {
         let port = 80;
-        let proto = String::from("tcp");
+        let proto = Some(String::from("tcp"));
+
+        // without proto
+        let expose = Expose { port, proto: None };
+        assert_eq!(expose.to_string(), "EXPOSE 80");
+
+        // with proto
         let expose = Expose { port, proto };
         assert_eq!(expose.to_string(), "EXPOSE 80/tcp")
     }

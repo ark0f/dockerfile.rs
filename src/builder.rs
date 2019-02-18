@@ -201,7 +201,7 @@ MAINTAINER lead rustcean
 
 RUN ["/bin/bash", "-c", "echo"]
 LABEL key="value"
-EXPOSE 80/tcp
+EXPOSE 80
 ENV RUST="1.0.0"
 ADD "/var/run" "/home"
 COPY "/var/run" "/home"

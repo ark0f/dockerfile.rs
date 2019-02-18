@@ -95,7 +95,7 @@ macro_rules! EXPOSE {
         use $crate::Expose;
         Expose {
             port: $port,
-            proto: stringify!($proto).to_string(),
+            proto: Some(stringify!($proto).to_string()),
         }
     }};
     ($port:expr) => {{
