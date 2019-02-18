@@ -2,7 +2,7 @@
 name = "dockerfile-rs"
 version = "0.2.0"
 authors = ["Arsenii Lyashenko <arsenylyashenko.3@gmail.com>"]
-description = "Docker file generator"
+description = "Correct Dockerfile generator library"
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/ark0f/dockerfile.rs"
 documentation = "https://docs.rs/dockerfile-rs"

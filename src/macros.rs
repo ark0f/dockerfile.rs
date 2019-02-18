@@ -1,5 +1,10 @@
 #![allow(non_snake_case)]
 
+/// ```rust,no_run
+/// # use dockerfile_rs::FROM;
+/// let from = FROM!(rust:latest);
+/// assert_eq!(from.to_string(), "FROM rust:latest");
+/// ```
 #[macro_export]
 macro_rules! FROM {
     ($image:ident) => {{
@@ -52,6 +57,11 @@ macro_rules! FROM {
     }};
 }
 
+/// ```rust,no_run
+/// # use dockerfile_rs::RUN;
+/// let run = RUN!["echo", "Hello, world!"];
+/// assert_eq!(run.to_string(), r#"RUN ["echo", "Hello, world!"]"#);
+/// ```
 #[macro_export]
 macro_rules! RUN {
     ($($x:expr), +) => {{
@@ -60,6 +70,11 @@ macro_rules! RUN {
     }};
 }
 
+/// ```rust,no_run
+/// # use dockerfile_rs::CMD;
+/// let cmd = CMD!["echo", "Hello, world!"];
+/// assert_eq!(cmd.to_string(), r#"CMD ["echo", "Hello, world!"]"#);
+/// ```
 #[macro_export]
 macro_rules! CMD {
     ($($x:expr), +) => {{
@@ -68,6 +83,11 @@ macro_rules! CMD {
     }};
 }
 
+/// ```rust,no_run
+/// # use dockerfile_rs::LABEL;
+/// let label = LABEL!["key" => "value"];
+/// assert_eq!(label.to_string(), r#"LABEL key="value""#);
+/// ```
 #[macro_export]
 macro_rules! LABEL {
     ($($x:expr => $y:expr), +) => {{
@@ -81,6 +101,15 @@ macro_rules! LABEL {
     }};
 }
 
+/// Deprecated, use [`LABEL!`] with `maintainer` key instead
+/// # Example
+/// ```rust,no_run
+/// # use dockerfile_rs::MAINTAINER;
+/// let maintainer = MAINTAINER!("Rustacean");
+/// assert_eq!(maintainer.to_string(), r#"MAINTAINER Rustacean"#);
+/// ```
+///
+///// [`LABEL!`]: macro.LABEL.html
 #[macro_export]
 macro_rules! MAINTAINER {
     ($name:expr) => {{
@@ -89,6 +118,11 @@ macro_rules! MAINTAINER {
     }};
 }
 
+/// ```rust,no_run
+/// # use dockerfile_rs::EXPOSE;
+/// let expose = EXPOSE!(5757/udp);
+/// assert_eq!(expose.to_string(), "EXPOSE 5757/udp");
+/// ```
 #[macro_export]
 macro_rules! EXPOSE {
     ($port:tt/$proto:ident) => {{
@@ -104,6 +138,11 @@ macro_rules! EXPOSE {
     }};
 }
 
+/// ```rust,no_run
+/// # use dockerfile_rs::ENV;
+/// let env = ENV!["BUILD" => "true"];
+/// assert_eq!(env.to_string(), r#"ENV BUILD="true""#);
+/// ```
 #[macro_export]
 macro_rules! ENV {
     ($($x:expr => $y:expr), +) => {{
@@ -117,6 +156,11 @@ macro_rules! ENV {
     }};
 }
 
+/// ```rust,no_run
+/// # use dockerfile_rs::ADD;
+/// let add = ADD!("/var/run" "/home");
+/// assert_eq!(add.to_string(), r#"ADD "/var/run" "/home""#);
+/// ```
 #[macro_export]
 macro_rules! ADD {
     (--chown=$user:ident:$group:ident $src:tt $dst:tt) => {{
@@ -151,6 +195,11 @@ macro_rules! ADD {
     }};
 }
 
+/// ```rust,no_run
+/// # use dockerfile_rs::COPY;
+/// let copy = COPY!("." ".");
+/// assert_eq!(copy.to_string(), r#"COPY "." ".""#);
+/// ```
 #[macro_export]
 macro_rules! COPY {
     (--from=$name:ident --chown=$user:ident:$group:ident $src:tt $dst:tt) => {{
@@ -212,6 +261,11 @@ macro_rules! COPY {
     }};
 }
 
+/// ```rust,no_run
+/// # use dockerfile_rs::ENTRYPOINT;
+/// let entry_point = ENTRYPOINT!["/bin/bash/", "-c", "echo"];
+/// assert_eq!(entry_point.to_string(), r#"ENTRYPOINT ["/bin/bash/", "-c", "echo"]"#);
+/// ```
 #[macro_export]
 macro_rules! ENTRYPOINT {
     ($($x:expr), +) => {{
@@ -220,6 +274,11 @@ macro_rules! ENTRYPOINT {
     }};
 }
 
+/// ```rust,no_run
+/// # use dockerfile_rs::VOLUME;
+/// let volume = VOLUME!("/var/run", "/var/www");
+/// assert_eq!(volume.to_string(), r#"VOLUME ["/var/run", "/var/www"]"#);
+/// ```
 #[macro_export]
 macro_rules! VOLUME {
     ($($x:expr), +) => {{
@@ -228,6 +287,11 @@ macro_rules! VOLUME {
     }};
 }
 
+/// ```rust,no_run
+/// # use dockerfile_rs::USER;
+/// let user = USER!(rustacean);
+/// assert_eq!(user.to_string(), r#"USER rustacean"#);
+/// ```
 #[macro_export]
 macro_rules! USER {
     ($user:ident:$group:ident) => {{
@@ -246,6 +310,11 @@ macro_rules! USER {
     }};
 }
 
+/// ```rust,no_run
+/// # use dockerfile_rs::WORKDIR;
+/// let work_dir = WORKDIR!("/home/container001");
+/// assert_eq!(work_dir.to_string(), r#"WORKDIR "/home/container001""#);
+/// ```
 #[macro_export]
 macro_rules! WORKDIR {
     ($dir:expr) => {{
@@ -254,6 +323,11 @@ macro_rules! WORKDIR {
     }};
 }
 
+/// ```rust,no_run
+/// # use dockerfile_rs::ARG;
+/// let arg = ARG!("key" => "value");
+/// assert_eq!(arg.to_string(), r#"ARG key="value""#);
+/// ```
 #[macro_export]
 macro_rules! ARG {
     ($x:expr => $y:expr) => {{
@@ -262,6 +336,11 @@ macro_rules! ARG {
     }};
 }
 
+/// ```rust,no_run
+/// # use dockerfile_rs::STOPSIGNAL;
+/// let signal = STOPSIGNAL!("SIGKILL");
+/// assert_eq!(signal.to_string(), "STOPSIGNAL SIGKILL");
+/// ```
 #[macro_export]
 macro_rules! STOPSIGNAL {
     ($signal:expr) => {{
@@ -270,6 +349,11 @@ macro_rules! STOPSIGNAL {
     }};
 }
 
+/// ```rust,no_run
+/// # use dockerfile_rs::HEALTHCHECK;
+/// let health_check = HEALTHCHECK!(NONE);
+/// assert_eq!(health_check.to_string(), "HEALTHCHECK NONE");
+/// ```
 #[macro_export]
 macro_rules! HEALTHCHECK {
     (NONE) => {{
@@ -288,6 +372,11 @@ macro_rules! HEALTHCHECK {
     }};
 }
 
+/// ```rust,no_run
+/// # use dockerfile_rs::SHELL;
+/// let shell = SHELL!["/bin/bash", "-c"];
+/// assert_eq!(shell.to_string(), r#"SHELL ["/bin/bash", "-c"]"#);
+/// ```
 #[macro_export]
 macro_rules! SHELL {
     ($($x:expr), +) => {{
@@ -296,6 +385,12 @@ macro_rules! SHELL {
     }};
 }
 
+/// ```rust,no_run
+/// # use dockerfile_rs::ONBUILD;
+/// # use dockerfile_rs::ENV;
+/// let on_build = ONBUILD!(ENV!["key" => "value"]);
+/// assert_eq!(on_build.to_string(), r#"ONBUILD ENV key="value""#);
+/// ```
 #[macro_export]
 macro_rules! ONBUILD {
     ($x:expr) => {{
@@ -304,6 +399,11 @@ macro_rules! ONBUILD {
     }};
 }
 
+/// ```rust,no_run
+/// # use dockerfile_rs::COMMENT;
+/// let comment = COMMENT!("Hello!");
+/// assert_eq!(comment.to_string(), "# Hello!");
+/// ```
 #[macro_export]
 macro_rules! COMMENT {
     ($x:expr) => {{

@@ -158,7 +158,9 @@ impl Display for Label {
 impl Instruction for Label {}
 impl StorageInstruction for Label {}
 
-/// Deprecated, use `LABEL maintainer=NAME` instead
+/// Deprecated, use [`Label`] with `maintainer` key instead
+///
+/// [`Label`]: struct.Label.html
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Maintainer {
     pub name: String,

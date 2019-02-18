@@ -4,6 +4,33 @@ use crate::{
 };
 use std::fmt::{self, Display};
 
+/// `Dockerfile` generator
+/// # Example
+/// ```rust,no_run
+/// # use std::io::Result;
+/// # fn main() -> Result<()> {
+/// use std::{io::Write, fs::File};
+/// use dockerfile_rs::{DockerFile, Copy, FROM};
+///
+/// let file = DockerFile::from(FROM!(nginx:latest))
+///     .comment("open port for server")
+///     .expose(80)
+///     .copy(Copy {
+///         src: ".".to_string(),
+///         dst: ".".to_string(),
+///         from: None,
+///         chown: None,
+///     })
+///     .cmd(&["echo", "Hello from container!"]);
+///
+/// // generate Dockerfile into string
+/// let content = file.to_string();
+/// // write into file
+/// let mut file = File::create("nginx.Dockerfile")?;
+/// write!(&mut file, "{}", content)?;
+/// # Ok(())
+/// # }
+/// ```
 pub struct DockerFile {
     from: From,
     maintainer: Option<Maintainer>,
@@ -25,6 +52,10 @@ impl DockerFile {
         }
     }
 
+    /// Can be defined just once, only last function call will have effect
+    /// Deprecated, use [`label`] with `maintainer` key instead
+    ///
+    /// [`label`]: struct.DockerFile.html#method.label
     pub fn maintainer<T: Into<Maintainer> + 'static>(mut self, maintainer: T) -> Self {
         self.maintainer = Some(maintainer.into());
         self
@@ -35,11 +66,13 @@ impl DockerFile {
         self
     }
 
+    /// Can be defined just once, only last function call will have effect
     pub fn entry_point<T: Into<EntryPoint> + 'static>(mut self, entry_point: T) -> Self {
         self.entry_point = Some(entry_point.into());
         self
     }
 
+    /// Can be defined just once, only last function call will have effect
     pub fn cmd<T: Into<Cmd> + 'static>(mut self, cmd: T) -> Self {
         self.cmd = Some(cmd.into());
         self

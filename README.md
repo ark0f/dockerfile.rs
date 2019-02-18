@@ -9,28 +9,28 @@ Correct `Dockerfile` generator library
 
 # Quick start
 ```rust
-use std::fs::File;
-use std::io;
+use std::{io::{Result, Write}, fs::File};
+use dockerfile_rs::{DockerFile, Copy, FROM};
 
-use dockerfile_rs::*;
-
-fn main() -> io::Result {
-    let file = DockerFile::from("nginx:latest")
+fn main() -> Result<()> {
+    let file = DockerFile::from(FROM!(nginx:latest))
         .comment("open port for server")
         .expose(80)
         .copy(Copy {
-            src: ".".to_string(), 
+            src: ".".to_string(),
             dst: ".".to_string(),
             from: None,
             chown: None,
         })
         .cmd(&["echo", "Hello from container!"]);
-        
+
     // generate Dockerfile into string
     let content = file.to_string();
     // write into file
     let mut file = File::create("nginx.Dockerfile")?;
     write!(&mut file, "{}", content)?;
+    
+    Ok(())
 }
 ```
 
