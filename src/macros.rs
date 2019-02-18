@@ -304,6 +304,14 @@ macro_rules! ONBUILD {
     }};
 }
 
+#[macro_export]
+macro_rules! COMMENT {
+    ($x:expr) => {{
+        use $crate::Comment;
+        Comment::from($x)
+    }};
+}
+
 mod tests {
     #[test]
     fn from() {
@@ -413,5 +421,10 @@ mod tests {
             on_build.to_string(),
             r#"ONBUILD CMD ["echo", "Hello, world!"]"#
         );
+    }
+
+    #[test]
+    fn comment() {
+        let _ = COMMENT!("Hello, world!");
     }
 }

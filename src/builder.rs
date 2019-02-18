@@ -1,6 +1,6 @@
 use crate::{
-    Add, Arg, Cmd, Copy, EntryPoint, Env, Expose, From, HealthCheck, Label, Maintainer, OnBuild,
-    Run, Shell, StopSignal, StorageInstruction, User, Volume, WorkDir,
+    Add, Arg, Cmd, Comment, Copy, EntryPoint, Env, Expose, From, HealthCheck, Label, Maintainer,
+    OnBuild, Run, Shell, StopSignal, StorageInstruction, User, Volume, WorkDir,
 };
 use std::fmt::{self, Display};
 
@@ -98,6 +98,10 @@ impl DockerFile {
         self.instruction(shell.into())
     }
 
+    pub fn comment<T: Into<Comment> + 'static>(self, comment: T) -> Self {
+        self.instruction(comment.into())
+    }
+
     pub fn on_build<T: Into<OnBuild> + 'static>(mut self, on_build: T) -> Self {
         self.on_builds.push(on_build.into());
         self
@@ -161,6 +165,7 @@ mod tests {
             name: None,
         })
         .maintainer("lead rustcean")
+        .comment("Hello, world!")
         .run(&["/bin/bash", "-c", "echo"])
         .label(("key", "value"))
         .expose(80)
@@ -199,6 +204,7 @@ mod tests {
 
 MAINTAINER lead rustcean
 
+# Hello, world!
 RUN ["/bin/bash", "-c", "echo"]
 LABEL key="value"
 EXPOSE 80

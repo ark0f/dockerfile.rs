@@ -281,7 +281,11 @@ impl Display for Add {
                 f,
                 r#"ADD --chown={}{} "{}" "{}""#,
                 chown.user,
-                chown.group.clone().map(|s| format!(":{}", s)).unwrap_or_default(),
+                chown
+                    .group
+                    .clone()
+                    .map(|s| format!(":{}", s))
+                    .unwrap_or_default(),
                 self.src,
                 self.dst
             ),
@@ -601,6 +605,29 @@ impl Display for OnBuild {
         write!(f, "ONBUILD {}", self.inner)
     }
 }
+
+pub struct Comment {
+    pub comment: String,
+}
+
+impl<T> StdFrom<T> for Comment
+where
+    T: AsRef<str>,
+{
+    fn from(s: T) -> Self {
+        let comment = s.as_ref().to_string();
+        Comment { comment }
+    }
+}
+
+impl Display for Comment {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "# {}", self.comment)
+    }
+}
+
+impl Instruction for Comment {}
+impl StorageInstruction for Comment {}
 
 #[cfg(test)]
 mod tests {
@@ -931,5 +958,12 @@ mod tests {
             onbuild.to_string(),
             r#"ONBUILD CMD ["curl", "-v", "https://rust-lang.org"]"#
         );
+    }
+
+    #[test]
+    fn comment() {
+        let comment = "This is an example comment";
+        let comment = Comment::from(comment);
+        assert_eq!(comment.to_string(), "# This is an example comment");
     }
 }
