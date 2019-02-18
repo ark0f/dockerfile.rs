@@ -341,7 +341,7 @@ mod tests {
 
     #[test]
     fn maintainer() {
-        let _ = MAINTAINER!("Funny Rustcean");
+        let _ = MAINTAINER!("Funny Rustacean");
     }
 
     #[test]
@@ -358,17 +358,17 @@ mod tests {
 
     #[test]
     fn add() {
-        let _ = ADD!(--chown=rustcean:root "/var/run" "/home");
-        let _ = ADD!(--chown=rustcean "/var/run" "/home");
+        let _ = ADD!(--chown=rustacean:root "/var/run" "/home");
+        let _ = ADD!(--chown=rustacean "/var/run" "/home");
         let _ = ADD!("/var/run" "/home");
     }
 
     #[test]
     fn copy() {
-        let _ = COPY!(--from=crab --chown=rustcean:root "/var/run" "/home");
-        let _ = COPY!(--from=crab --chown=rustcean "/var/run" "/home");
-        let _ = COPY!(--chown=rustcean:root "/var/run" "/home");
-        let _ = COPY!(--chown=rustcean "/var/run" "/home");
+        let _ = COPY!(--from=crab --chown=rustacean:root "/var/run" "/home");
+        let _ = COPY!(--from=crab --chown=rustacean "/var/run" "/home");
+        let _ = COPY!(--chown=rustacean:root "/var/run" "/home");
+        let _ = COPY!(--chown=rustacean "/var/run" "/home");
         let _ = COPY!("/var/run" "/home");
     }
 
@@ -384,13 +384,13 @@ mod tests {
 
     #[test]
     fn user() {
-        let _ = USER!(rustcean: root);
-        let _ = USER!(rustcean);
+        let _ = USER!(rustacean: root);
+        let _ = USER!(rustacean);
     }
 
     #[test]
     fn work_dir() {
-        let _ = WORKDIR!("/home/rustcean");
+        let _ = WORKDIR!("/home/rustacean");
     }
 
     #[test]

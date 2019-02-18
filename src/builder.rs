@@ -164,7 +164,7 @@ mod tests {
             tag_or_digest: Some(Tag("latest".to_string())),
             name: None,
         })
-        .maintainer("lead rustcean")
+        .maintainer("lead rustacean")
         .comment("Hello, world!")
         .run(&["/bin/bash", "-c", "echo"])
         .label(("key", "value"))
@@ -183,10 +183,10 @@ mod tests {
         })
         .volume(&["/var/run", "/var/www"])
         .user(User {
-            user: "rustcean".to_string(),
+            user: "rustacean".to_string(),
             group: None,
         })
-        .work_dir("/home/rustcean")
+        .work_dir("/home/rustacean")
         .arg(("build", "yes"))
         .stop_signal("SIGKILL")
         .health_check(HealthCheck::None)
@@ -202,7 +202,7 @@ mod tests {
             content,
             r#"FROM rust:latest
 
-MAINTAINER lead rustcean
+MAINTAINER lead rustacean
 
 # Hello, world!
 RUN ["/bin/bash", "-c", "echo"]
@@ -212,8 +212,8 @@ ENV RUST="1.0.0"
 ADD "/var/run" "/home"
 COPY "/var/run" "/home"
 VOLUME ["/var/run", "/var/www"]
-USER rustcean
-WORKDIR "/home/rustcean"
+USER rustacean
+WORKDIR "/home/rustacean"
 ARG build="yes"
 STOPSIGNAL SIGKILL
 HEALTHCHECK NONE

@@ -745,9 +745,9 @@ mod tests {
 
     #[test]
     fn maintainer() {
-        let name = String::from("Someone Rustcean");
+        let name = String::from("Someone Rustacean");
         let maintainer = Maintainer::from(name.clone());
-        assert_eq!(maintainer.to_string(), "MAINTAINER Someone Rustcean");
+        assert_eq!(maintainer.to_string(), "MAINTAINER Someone Rustacean");
         assert_eq!(maintainer, Label::from(("maintainer", name)))
     }
 
@@ -776,7 +776,7 @@ mod tests {
     #[test]
     fn add() {
         let chown = User {
-            user: "rustcean".to_string(),
+            user: "rustacean".to_string(),
             group: None,
         };
         let src = "/home/container001".to_string();
@@ -790,7 +790,7 @@ mod tests {
         };
         assert_eq!(
             add.to_string(),
-            r#"ADD --chown=rustcean "/home/container001" "/""#
+            r#"ADD --chown=rustacean "/home/container001" "/""#
         );
 
         // without chown
@@ -806,7 +806,7 @@ mod tests {
     fn copy() {
         let from = Some("crab".to_string());
         let chown = Some(User {
-            user: "rustcean".to_string(),
+            user: "rustacean".to_string(),
             group: Some("root".to_string()),
         });
         let src = "/home/container001".to_string();
@@ -821,7 +821,7 @@ mod tests {
         };
         assert_eq!(
             copy.to_string(),
-            r#"COPY --from=crab --chown=rustcean:root "/home/container001" "/""#
+            r#"COPY --from=crab --chown=rustacean:root "/home/container001" "/""#
         );
 
         // with from
@@ -845,7 +845,7 @@ mod tests {
         };
         assert_eq!(
             copy.to_string(),
-            r#"COPY --chown=rustcean:root "/home/container001" "/""#
+            r#"COPY --chown=rustacean:root "/home/container001" "/""#
         );
 
         // without from and without chown
@@ -878,7 +878,7 @@ mod tests {
 
     #[test]
     fn user() {
-        let user = "rustcean".to_string();
+        let user = "rustacean".to_string();
         let group = Some("root".to_string());
 
         // with group
@@ -886,11 +886,11 @@ mod tests {
             user: user.clone(),
             group,
         };
-        assert_eq!(usr.to_string(), "USER rustcean:root");
+        assert_eq!(usr.to_string(), "USER rustacean:root");
 
         // without group
         let usr = User { user, group: None };
-        assert_eq!(usr.to_string(), "USER rustcean");
+        assert_eq!(usr.to_string(), "USER rustacean");
     }
 
     #[test]
