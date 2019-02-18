@@ -1,3 +1,7 @@
+# v0.2.1 (2019-02-18)
+Features:
+* Add documentation
+
 # v0.2.0 (2019-02-18)
 Fixes:
 * Typo in `rustacean` word
