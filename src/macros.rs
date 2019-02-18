@@ -304,25 +304,6 @@ macro_rules! ONBUILD {
     }};
 }
 
-#[macro_export]
-macro_rules! Dockerfile {
-    (FROM $from:expr, $($y:expr), *) => {{
-        use $crate::DockerFile;
-        DockerFile::from($from)
-        $(
-            .instruction($y)
-        )*
-    }};
-    (FROM $from:expr, MAINTAINER $maintainer:expr, $($y:expr), *) => {{
-        use $crate::DockerFile;
-        DockerFile::from($from)
-            .maintainer($maintainer)
-        $(
-            .instruction($y)
-        )*
-    }}
-}
-
 mod tests {
     #[test]
     fn from() {
@@ -431,38 +412,6 @@ mod tests {
         assert_eq!(
             on_build.to_string(),
             r#"ONBUILD CMD ["echo", "Hello, world!"]"#
-        );
-    }
-
-    #[test]
-    fn docker_file() {
-        let file = Dockerfile!(
-            FROM FROM!(rust:latest),
-            LABEL!["key" => "value"]
-        );
-        let content = file.to_string();
-        assert_eq!(
-            content,
-            r#"FROM rust:latest
-
-LABEL key="value"
-"#
-        );
-
-        let file = Dockerfile!(
-            FROM FROM!(rust:latest),
-            MAINTAINER MAINTAINER!("Funny Rustcean"),
-            LABEL!["key" => "value"]
-        );
-        let content = file.to_string();
-        assert_eq!(
-            content,
-            r#"FROM rust:latest
-
-MAINTAINER Funny Rustcean
-
-LABEL key="value"
-"#
         );
     }
 }

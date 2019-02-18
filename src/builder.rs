@@ -1,13 +1,15 @@
 use crate::{
-    Add, Arg, Cmd, Copy, EntryPoint, Env, Expose, From, HealthCheck, Instruction, Label,
-    Maintainer, OnBuild, Run, Shell, StopSignal, User, Volume, WorkDir,
+    Add, Arg, Cmd, Copy, EntryPoint, Env, Expose, From, HealthCheck, Label, Maintainer, OnBuild,
+    Run, Shell, StopSignal, StorageInstruction, User, Volume, WorkDir,
 };
 use std::fmt::{self, Display};
 
 pub struct DockerFile {
     from: From,
     maintainer: Option<Maintainer>,
-    instructions: Vec<Box<Instruction>>,
+    entry_point: Option<EntryPoint>,
+    cmd: Option<Cmd>,
+    instructions: Vec<Box<StorageInstruction>>,
     on_builds: Vec<OnBuild>,
 }
 
@@ -16,6 +18,8 @@ impl DockerFile {
         Self {
             from,
             maintainer: None,
+            entry_point: None,
+            cmd: None,
             instructions: Vec::new(),
             on_builds: Vec::new(),
         }
@@ -26,17 +30,23 @@ impl DockerFile {
         self
     }
 
-    pub fn instruction<T: Instruction + 'static>(mut self, t: T) -> Self {
+    fn instruction<T: StorageInstruction + 'static>(mut self, t: T) -> Self {
         self.instructions.push(Box::new(t));
+        self
+    }
+
+    pub fn entry_point<T: Into<EntryPoint> + 'static>(mut self, entry_point: T) -> Self {
+        self.entry_point = Some(entry_point.into());
+        self
+    }
+
+    pub fn cmd<T: Into<Cmd> + 'static>(mut self, cmd: T) -> Self {
+        self.cmd = Some(cmd.into());
         self
     }
 
     pub fn run<T: Into<Run> + 'static>(self, run: T) -> Self {
         self.instruction(run.into())
-    }
-
-    pub fn cmd<T: Into<Cmd> + 'static>(self, cmd: T) -> Self {
-        self.instruction(cmd.into())
     }
 
     pub fn label<T: Into<Label> + 'static>(self, label: T) -> Self {
@@ -58,10 +68,6 @@ impl DockerFile {
 
     pub fn copy(self, copy: Copy) -> Self {
         self.instruction(copy)
-    }
-
-    pub fn entry_point<T: Into<EntryPoint> + 'static>(self, entry_point: T) -> Self {
-        self.instruction(entry_point.into())
     }
 
     pub fn volume<T: Into<Volume> + 'static>(self, volume: T) -> Self {
@@ -101,15 +107,17 @@ impl DockerFile {
 impl Display for DockerFile {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "{}", self.from)?;
-        writeln!(f)?;
 
         if let Some(maintainer) = &self.maintainer {
-            writeln!(f, "{}", maintainer)?;
             writeln!(f)?;
+            writeln!(f, "{}", maintainer)?;
         }
 
-        for instruction in &self.instructions {
-            writeln!(f, "{}", instruction)?;
+        if !self.instructions.is_empty() {
+            writeln!(f)?;
+            for instruction in &self.instructions {
+                writeln!(f, "{}", instruction)?;
+            }
         }
 
         if !self.on_builds.is_empty() {
@@ -117,6 +125,23 @@ impl Display for DockerFile {
             for on_build in &self.on_builds {
                 writeln!(f, "{}", on_build)?;
             }
+        }
+
+        match (&self.entry_point, &self.cmd) {
+            (Some(entry_point), Some(cmd)) => {
+                writeln!(f)?;
+                writeln!(f, "{}", entry_point)?;
+                writeln!(f, "{}", cmd)?;
+            }
+            (Some(entry_point), None) => {
+                writeln!(f)?;
+                writeln!(f, "{}", entry_point)?;
+            }
+            (None, Some(cmd)) => {
+                writeln!(f)?;
+                writeln!(f, "{}", cmd)?;
+            }
+            (None, None) => {}
         }
 
         Ok(())
@@ -137,7 +162,6 @@ mod tests {
         })
         .maintainer("lead rustcean")
         .run(&["/bin/bash", "-c", "echo"])
-        .cmd(&["echo", "Hi!"])
         .label(("key", "value"))
         .expose(80)
         .env(("RUST", "1.0.0"))
@@ -152,7 +176,6 @@ mod tests {
             from: None,
             chown: None,
         })
-        .entry_point(&["cargo", "check"])
         .volume(&["/var/run", "/var/www"])
         .user(User {
             user: "rustcean".to_string(),
@@ -167,6 +190,8 @@ mod tests {
             "echo",
             "This is the ONBUILD command",
         ])))
+        .entry_point(&["cargo", "check"])
+        .cmd(&["echo", "Hi!"])
         .to_string();
         assert_eq!(
             content,
@@ -175,13 +200,11 @@ mod tests {
 MAINTAINER lead rustcean
 
 RUN ["/bin/bash", "-c", "echo"]
-CMD ["echo", "Hi!"]
 LABEL key="value"
 EXPOSE 80/tcp
 ENV RUST="1.0.0"
 ADD "/var/run" "/home"
 COPY "/var/run" "/home"
-ENTRYPOINT ["cargo", "check"]
 VOLUME ["/var/run", "/var/www"]
 USER rustcean
 WORKDIR "/home/rustcean"
@@ -191,6 +214,9 @@ HEALTHCHECK NONE
 SHELL ["/bin/bash", "-c"]
 
 ONBUILD CMD ["echo", "This is the ONBUILD command"]
+
+ENTRYPOINT ["cargo", "check"]
+CMD ["echo", "Hi!"]
 "#
         );
     }

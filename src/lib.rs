@@ -13,6 +13,8 @@ use std::{
 
 pub trait Instruction: Display {}
 
+trait StorageInstruction: Instruction {}
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum TagOrDigest {
     Tag(String),
@@ -74,6 +76,7 @@ impl Display for Run {
 }
 
 impl Instruction for Run {}
+impl StorageInstruction for Run {}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Cmd {
@@ -153,6 +156,7 @@ impl Display for Label {
 }
 
 impl Instruction for Label {}
+impl StorageInstruction for Label {}
 
 /// Deprecated, use `LABEL maintainer=NAME` instead
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -208,6 +212,7 @@ impl Display for Expose {
 }
 
 impl Instruction for Expose {}
+impl StorageInstruction for Expose {}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Env {
@@ -255,6 +260,7 @@ impl Display for Env {
 }
 
 impl Instruction for Env {}
+impl StorageInstruction for Env {}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Add {
@@ -280,6 +286,7 @@ impl Display for Add {
 }
 
 impl Instruction for Add {}
+impl StorageInstruction for Add {}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Copy {
@@ -326,6 +333,7 @@ impl Display for Copy {
 }
 
 impl Instruction for Copy {}
+impl StorageInstruction for Copy {}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct EntryPoint {
@@ -390,6 +398,7 @@ impl Display for Volume {
 }
 
 impl Instruction for Volume {}
+impl StorageInstruction for Volume {}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct User {
@@ -407,6 +416,7 @@ impl Display for User {
 }
 
 impl Instruction for User {}
+impl StorageInstruction for User {}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct WorkDir {
@@ -430,6 +440,7 @@ impl Display for WorkDir {
 }
 
 impl Instruction for WorkDir {}
+impl StorageInstruction for WorkDir {}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Arg {
@@ -462,6 +473,7 @@ impl Display for Arg {
 }
 
 impl Instruction for Arg {}
+impl StorageInstruction for Arg {}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct StopSignal {
@@ -485,6 +497,7 @@ impl Display for StopSignal {
 }
 
 impl Instruction for StopSignal {}
+impl StorageInstruction for StopSignal {}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum HealthCheck {
@@ -529,6 +542,7 @@ impl Display for HealthCheck {
 }
 
 impl Instruction for HealthCheck {}
+impl StorageInstruction for HealthCheck {}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Shell {
@@ -561,6 +575,7 @@ impl Display for Shell {
 }
 
 impl Instruction for Shell {}
+impl StorageInstruction for Shell {}
 
 pub struct OnBuild {
     inner: Box<Instruction>,
@@ -589,8 +604,8 @@ mod tests {
     #[test]
     fn from() {
         let image = String::from("rust");
-        let tag = Some(TagOrDigest::Tag("latest".into()));
-        let digest = Some(TagOrDigest::Digest("digest".into()));
+        let tag = Some(Tag("latest".into()));
+        let digest = Some(Digest("digest".into()));
         let name = Some(String::from("crab"));
 
         // tag and no name
