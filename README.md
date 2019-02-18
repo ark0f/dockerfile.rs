@@ -5,7 +5,45 @@
 [![API docs](https://docs.rs/dockerfile-rs/badge.svg)](https://docs.rs/dockerfile-rs)
 [![Codecov](https://codecov.io/gh/ark0f/dockerfile.rs/branch/master/graph/badge.svg)](https://codecov.io/gh/ark0f/dockerfile.rs)
 
-Docker file generator
+Correct `Dockerfile` generator library
+
+# Quick start
+```rust
+use std::fs::File;
+use std::io;
+
+use dockerfile_rs::*;
+
+fn main() -> io::Result {
+    let file = DockerFile::from("nginx:latest")
+        .comment("open port for server")
+        .expose(80)
+        .copy(Copy {
+            src: ".".to_string(), 
+            dst: ".".to_string(),
+            from: None,
+            chown: None,
+        })
+        .cmd(&["echo", "Hello from container!"]);
+        
+    // generate Dockerfile into string
+    let content = file.to_string();
+    // write into file
+    let mut file = File::create("nginx.Dockerfile")?;
+    write!(&mut file, "{}", content)?;
+}
+```
+
+Generated file:
+```Dockerfile
+FROM nginx:latest
+
+# open port for server
+EXPOSE 80
+COPY . .
+
+CMD ["echo", "Hello from container!"]
+```
 
 # [Changelog](https://github.com/ark0f/dockerfile.rs/blob/master/CHANGELOG.md)
 
