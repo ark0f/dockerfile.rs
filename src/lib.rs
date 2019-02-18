@@ -281,7 +281,7 @@ impl Display for Add {
                 f,
                 r#"ADD --chown={}{} "{}" "{}""#,
                 chown.user,
-                chown.group.clone().unwrap_or_default(),
+                chown.group.clone().map(|s| format!(":{}", s)).unwrap_or_default(),
                 self.src,
                 self.dst
             ),
@@ -312,7 +312,7 @@ impl Display for Copy {
                 chown
                     .group
                     .clone()
-                    .map(|group| format!(":{}", group))
+                    .map(|s| format!(":{}", s))
                     .unwrap_or_default(),
                 self.src,
                 self.dst
