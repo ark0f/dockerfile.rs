@@ -266,7 +266,7 @@ macro_rules! ARG {
 macro_rules! STOPSIGNAL {
     ($signal:expr) => {{
         use $crate::StopSignal;
-        StopSignal::from($signal);
+        StopSignal::from($signal)
     }};
 }
 
