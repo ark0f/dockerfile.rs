@@ -10,18 +10,13 @@ Correct `Dockerfile` generator library
 # Quick start
 ```rust
 use std::{io::{Result, Write}, fs::File};
-use dockerfile_rs::{DockerFile, Copy, FROM};
+use dockerfile_rs::{DockerFile, FROM};
 
 fn main() -> Result<()> {
     let file = DockerFile::from(FROM!(nginx:latest))
         .comment("open port for server")
         .expose(80)
-        .copy(Copy {
-            src: ".".to_string(),
-            dst: ".".to_string(),
-            from: None,
-            chown: None,
-        })
+        .copy((".", "."))
         .cmd(&["echo", "Hello from container!"]);
 
     // generate Dockerfile into string
