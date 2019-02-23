@@ -278,7 +278,7 @@ pub struct Add {
 
 impl<K, V> StdFrom<(K, V)> for Add
 where
-    K: AsRef<str> + Eq + Hash,
+    K: AsRef<str>,
     V: AsRef<str>,
 {
     fn from((k, v): (K, V)) -> Self {
@@ -325,7 +325,7 @@ pub struct Copy {
 
 impl<K, V> StdFrom<(K, V)> for Copy
 where
-    K: AsRef<str> + Eq + Hash,
+    K: AsRef<str>,
     V: AsRef<str>,
 {
     fn from((k, v): (K, V)) -> Self {
