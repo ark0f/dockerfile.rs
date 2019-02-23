@@ -1,3 +1,7 @@
+# v0.2.2 (2019-02-23)
+Features:
+* Add `impl<K, V> From<(K, V)> where K: AsRef<str>, V: AsRef<str>` for `Copy` and `Add` structures
+
 # v0.2.1 (2019-02-18)
 Features:
 * Add documentation
