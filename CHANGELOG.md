@@ -1,3 +1,10 @@
+# v0.2.3 (2019-02-23)
+Fixes:
+* Remove useless traits `Eq` and `Hash` in `impl<K, V> From<(K, V)>` for `Copy` and `Add`
+
+Breaking changes:
+* Yank [v0.2.2](#v022-2019-02-23)
+
 # v0.2.2 (2019-02-23)
 Features:
 * Add `impl<K, V> From<(K, V)> where K: AsRef<str>, V: AsRef<str>` for `Copy` and `Add` structures
