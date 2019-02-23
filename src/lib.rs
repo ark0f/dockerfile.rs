@@ -276,6 +276,22 @@ pub struct Add {
     pub chown: Option<User>,
 }
 
+impl<K, V> StdFrom<(K, V)> for Add
+where
+    K: AsRef<str> + Eq + Hash,
+    V: AsRef<str>,
+{
+    fn from((k, v): (K, V)) -> Self {
+        let src = k.as_ref().to_string();
+        let dst = v.as_ref().to_string();
+        Add {
+            src,
+            dst,
+            chown: None,
+        }
+    }
+}
+
 impl Display for Add {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self.chown {
@@ -305,6 +321,23 @@ pub struct Copy {
     pub dst: String,
     pub from: Option<String>,
     pub chown: Option<User>,
+}
+
+impl<K, V> StdFrom<(K, V)> for Copy
+where
+    K: AsRef<str> + Eq + Hash,
+    V: AsRef<str>,
+{
+    fn from((k, v): (K, V)) -> Self {
+        let src = k.as_ref().to_string();
+        let dst = v.as_ref().to_string();
+        Copy {
+            src,
+            dst,
+            from: None,
+            chown: None,
+        }
+    }
 }
 
 impl Display for Copy {
@@ -796,11 +829,7 @@ mod tests {
         );
 
         // without chown
-        let add = Add {
-            src,
-            dst,
-            chown: None,
-        };
+        let add = Add::from((src.clone(), dst.clone()));
         assert_eq!(add.to_string(), r#"ADD "/home/container001" "/""#);
     }
 
@@ -851,12 +880,7 @@ mod tests {
         );
 
         // without from and without chown
-        let copy = Copy {
-            src: src.clone(),
-            dst: dst.clone(),
-            from: None,
-            chown: None,
-        };
+        let copy = Copy::from((src.clone(), dst.clone()));
         assert_eq!(copy.to_string(), r#"COPY "/home/container001" "/""#);
     }
 
