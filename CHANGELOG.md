@@ -1,3 +1,7 @@
+# v0.3.0 (2019-04-04)
+Breaking changes:
+* Use `Into<String>` instead of `AsRef<str>`
+
 # v0.2.3 (2019-02-23)
 Fixes:
 * Remove useless traits `Eq` and `Hash` in `impl<K, V> From<(K, V)>` for `Copy` and `Add`
