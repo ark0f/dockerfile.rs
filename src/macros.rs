@@ -66,7 +66,7 @@ macro_rules! FROM {
 macro_rules! RUN {
     ($($x:expr), +) => {{
         use $crate::Run;
-        Run::from(&[$($x), +])
+        Run::from(vec![$($x), +])
     }};
 }
 
@@ -79,7 +79,7 @@ macro_rules! RUN {
 macro_rules! CMD {
     ($($x:expr), +) => {{
         use $crate::Cmd;
-        Cmd::from(&[$($x), +])
+        Cmd::from(vec![$($x), +])
     }};
 }
 
@@ -270,7 +270,7 @@ macro_rules! COPY {
 macro_rules! ENTRYPOINT {
     ($($x:expr), +) => {{
         use $crate::EntryPoint;
-        EntryPoint::from(&[$($x), +])
+        EntryPoint::from(vec![$($x), +])
     }};
 }
 
@@ -283,7 +283,7 @@ macro_rules! ENTRYPOINT {
 macro_rules! VOLUME {
     ($($x:expr), +) => {{
         use $crate::Volume;
-        Volume::from(&[$($x), +])
+        Volume::from(vec![$($x), +])
     }};
 }
 
@@ -381,7 +381,7 @@ macro_rules! HEALTHCHECK {
 macro_rules! SHELL {
     ($($x:expr), +) => {{
         use $crate::Shell;
-        Shell::from(&[$($x), +])
+        Shell::from(vec![$($x), +])
     }};
 }
 
@@ -506,7 +506,7 @@ mod tests {
     #[test]
     fn health_check() {
         let _ = HEALTHCHECK!(NONE);
-        let _ = HEALTHCHECK!(CMD & ["curl", "-v", "https://rust-lang.org"]);
+        let _ = HEALTHCHECK!(CMD vec!["curl", "-v", "https://rust-lang.org"]);
     }
 
     #[test]

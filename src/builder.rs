@@ -12,7 +12,7 @@ use std::fmt::{self, Display};
 /// use std::{io::Write, fs::File};
 /// use dockerfile_rs::{DockerFile, Copy, FROM};
 ///
-/// let file = DockerFile::from(FROM!(nginx:latest))
+/// let docker_file = DockerFile::from(FROM!(nginx:latest))
 ///     .comment("open port for server")
 ///     .expose(80)
 ///     .copy(Copy {
@@ -21,13 +21,11 @@ use std::fmt::{self, Display};
 ///         from: None,
 ///         chown: None,
 ///     })
-///     .cmd(&["echo", "Hello from container!"]);
+///     .cmd(vec!["echo", "Hello from container!"]);
 ///
-/// // generate Dockerfile into string
-/// let content = file.to_string();
 /// // write into file
 /// let mut file = File::create("nginx.Dockerfile")?;
-/// write!(&mut file, "{}", content)?;
+/// write!(&mut file, "{}", docker_file)?;
 /// # Ok(())
 /// # }
 /// ```
@@ -199,7 +197,7 @@ mod tests {
         })
         .maintainer("lead rustacean")
         .comment("Hello, world!")
-        .run(&["/bin/bash", "-c", "echo"])
+        .run(vec!["/bin/bash", "-c", "echo"])
         .label(("key", "value"))
         .expose(80)
         .env(("RUST", "1.0.0"))
@@ -214,7 +212,7 @@ mod tests {
             from: None,
             chown: None,
         })
-        .volume(&["/var/run", "/var/www"])
+        .volume(vec!["/var/run", "/var/www"])
         .user(User {
             user: "rustacean".to_string(),
             group: None,
@@ -223,13 +221,13 @@ mod tests {
         .arg(("build", "yes"))
         .stop_signal("SIGKILL")
         .health_check(HealthCheck::None)
-        .shell(&["/bin/bash", "-c"])
-        .on_build(OnBuild::from(Cmd::from(&[
+        .shell(vec!["/bin/bash", "-c"])
+        .on_build(OnBuild::from(Cmd::from(vec![
             "echo",
             "This is the ONBUILD command",
         ])))
-        .entry_point(&["cargo", "check"])
-        .cmd(&["echo", "Hi!"])
+        .entry_point(vec!["cargo", "check"])
+        .cmd(vec!["echo", "Hi!"])
         .to_string();
         assert_eq!(
             content,

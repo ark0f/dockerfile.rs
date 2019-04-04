@@ -13,17 +13,15 @@ use std::{io::{Result, Write}, fs::File};
 use dockerfile_rs::{DockerFile, FROM};
 
 fn main() -> Result<()> {
-    let file = DockerFile::from(FROM!(nginx:latest))
+    let docker_file = DockerFile::from(FROM!(nginx:latest))
         .comment("open port for server")
         .expose(80)
         .copy((".", "."))
-        .cmd(&["echo", "Hello from container!"]);
+        .cmd(vec!["echo", "Hello from container!"]);
 
-    // generate Dockerfile into string
-    let content = file.to_string();
     // write into file
     let mut file = File::create("nginx.Dockerfile")?;
-    write!(&mut file, "{}", content)?;
+    write!(&mut file, "{}", docker_file)?;
     
     Ok(())
 }

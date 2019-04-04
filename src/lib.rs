@@ -53,10 +53,10 @@ pub struct Run {
 impl<I, S> StdFrom<I> for Run
 where
     I: IntoIterator<Item = S>,
-    S: AsRef<str>,
+    S: Into<String>,
 {
     fn from(iter: I) -> Self {
-        let params = iter.into_iter().map(|i| i.as_ref().to_string()).collect();
+        let params = iter.into_iter().map(Into::into).collect();
         Run { params }
     }
 }
@@ -86,10 +86,10 @@ pub struct Cmd {
 impl<I, S> StdFrom<I> for Cmd
 where
     I: IntoIterator<Item = S>,
-    S: AsRef<str>,
+    S: Into<String>,
 {
     fn from(iter: I) -> Self {
-        let params = iter.into_iter().map(|i| i.as_ref().to_string()).collect();
+        let params = iter.into_iter().map(Into::into).collect();
         Cmd { params }
     }
 }
@@ -117,13 +117,13 @@ pub struct Label {
 
 impl<K, V> StdFrom<HashMap<K, V>> for Label
 where
-    K: AsRef<str> + Eq + Hash,
+    K: Into<String> + Eq + Hash,
     V: AsRef<str>,
 {
     fn from(map: HashMap<K, V>) -> Self {
         let inner = map
-            .iter()
-            .map(|(k, v)| (String::from(k.as_ref()), v.as_ref().replace('\n', "\\\n")))
+            .into_iter()
+            .map(|(k, v)| (k.into(), v.as_ref().replace('\n', "\\\n")))
             .collect();
         Label { inner }
     }
@@ -131,12 +131,12 @@ where
 
 impl<K, V> StdFrom<(K, V)> for Label
 where
-    K: AsRef<str> + Eq + Hash,
-    V: AsRef<str>,
+    K: Into<String> + Eq + Hash,
+    V: Into<String>,
 {
     fn from((k, v): (K, V)) -> Self {
         let mut inner = HashMap::new();
-        inner.insert(k.as_ref().to_string(), v.as_ref().to_string());
+        inner.insert(k.into(), v.into());
         Label { inner }
     }
 }
@@ -168,11 +168,10 @@ pub struct Maintainer {
 
 impl<T> StdFrom<T> for Maintainer
 where
-    T: AsRef<str>,
+    T: Into<String>,
 {
-    fn from(s: T) -> Self {
-        let name = s.as_ref().to_string();
-        Maintainer { name }
+    fn from(name: T) -> Self {
+        Maintainer { name: name.into() }
     }
 }
 
@@ -228,26 +227,23 @@ pub struct Env {
 
 impl<K, V> StdFrom<HashMap<K, V>> for Env
 where
-    K: AsRef<str> + Eq + Hash,
-    V: AsRef<str>,
+    K: Into<String> + Eq + Hash,
+    V: Into<String>,
 {
     fn from(map: HashMap<K, V>) -> Self {
-        let inner = map
-            .iter()
-            .map(|(k, v)| (String::from(k.as_ref()), String::from(v.as_ref())))
-            .collect();
+        let inner = map.into_iter().map(|(k, v)| (k.into(), v.into())).collect();
         Env { inner }
     }
 }
 
 impl<K, V> StdFrom<(K, V)> for Env
 where
-    K: AsRef<str> + Eq + Hash,
-    V: AsRef<str>,
+    K: Into<String> + Eq + Hash,
+    V: Into<String>,
 {
     fn from((k, v): (K, V)) -> Self {
         let mut inner = HashMap::new();
-        inner.insert(k.as_ref().to_string(), v.as_ref().to_string());
+        inner.insert(k.into(), v.into());
         Env { inner }
     }
 }
@@ -278,15 +274,13 @@ pub struct Add {
 
 impl<K, V> StdFrom<(K, V)> for Add
 where
-    K: AsRef<str>,
-    V: AsRef<str>,
+    K: Into<String>,
+    V: Into<String>,
 {
-    fn from((k, v): (K, V)) -> Self {
-        let src = k.as_ref().to_string();
-        let dst = v.as_ref().to_string();
+    fn from((src, dst): (K, V)) -> Self {
         Add {
-            src,
-            dst,
+            src: src.into(),
+            dst: dst.into(),
             chown: None,
         }
     }
@@ -325,15 +319,13 @@ pub struct Copy {
 
 impl<K, V> StdFrom<(K, V)> for Copy
 where
-    K: AsRef<str>,
-    V: AsRef<str>,
+    K: Into<String>,
+    V: Into<String>,
 {
-    fn from((k, v): (K, V)) -> Self {
-        let src = k.as_ref().to_string();
-        let dst = v.as_ref().to_string();
+    fn from((src, dst): (K, V)) -> Self {
         Copy {
-            src,
-            dst,
+            src: src.into(),
+            dst: dst.into(),
             from: None,
             chown: None,
         }
@@ -387,10 +379,10 @@ pub struct EntryPoint {
 impl<I, S> StdFrom<I> for EntryPoint
 where
     I: IntoIterator<Item = S>,
-    S: AsRef<str>,
+    S: Into<String>,
 {
     fn from(iter: I) -> Self {
-        let params = iter.into_iter().map(|i| i.as_ref().to_string()).collect();
+        let params = iter.into_iter().map(Into::into).collect();
         EntryPoint { params }
     }
 }
@@ -419,10 +411,10 @@ pub struct Volume {
 impl<I, S> StdFrom<I> for Volume
 where
     I: IntoIterator<Item = S>,
-    S: AsRef<str>,
+    S: Into<String>,
 {
     fn from(iter: I) -> Self {
-        let paths = iter.into_iter().map(|i| i.as_ref().to_string()).collect();
+        let paths = iter.into_iter().map(Into::into).collect();
         Volume { paths }
     }
 }
@@ -469,11 +461,10 @@ pub struct WorkDir {
 
 impl<T> StdFrom<T> for WorkDir
 where
-    T: AsRef<str>,
+    T: Into<String>,
 {
-    fn from(s: T) -> Self {
-        let path = s.as_ref().to_string();
-        WorkDir { path }
+    fn from(path: T) -> Self {
+        WorkDir { path: path.into() }
     }
 }
 
@@ -494,15 +485,13 @@ pub struct Arg {
 
 impl<K, V> StdFrom<(K, V)> for Arg
 where
-    K: AsRef<str>,
-    V: AsRef<str>,
+    K: Into<String>,
+    V: Into<String>,
 {
-    fn from((k, v): (K, V)) -> Self {
-        let name = k.as_ref().to_string();
-        let value = v.as_ref().to_string();
+    fn from((name, value): (K, V)) -> Self {
         Arg {
-            name,
-            value: Some(value),
+            name: name.into(),
+            value: Some(value.into()),
         }
     }
 }
@@ -526,11 +515,12 @@ pub struct StopSignal {
 
 impl<T> StdFrom<T> for StopSignal
 where
-    T: AsRef<str>,
+    T: Into<String>,
 {
-    fn from(s: T) -> Self {
-        let signal = s.as_ref().to_string();
-        StopSignal { signal }
+    fn from(signal: T) -> Self {
+        StopSignal {
+            signal: signal.into(),
+        }
     }
 }
 
@@ -596,10 +586,10 @@ pub struct Shell {
 impl<I, S> StdFrom<I> for Shell
 where
     I: IntoIterator<Item = S>,
-    S: AsRef<str>,
+    S: Into<String>,
 {
     fn from(iter: I) -> Self {
-        let params = iter.into_iter().map(|i| i.as_ref().to_string()).collect();
+        let params = iter.into_iter().map(Into::into).collect();
         Shell { params }
     }
 }
@@ -647,11 +637,12 @@ pub struct Comment {
 
 impl<T> StdFrom<T> for Comment
 where
-    T: AsRef<str>,
+    T: Into<String>,
 {
-    fn from(s: T) -> Self {
-        let comment = s.as_ref().to_string();
-        Comment { comment }
+    fn from(comment: T) -> Self {
+        Comment {
+            comment: comment.into(),
+        }
     }
 }
 
@@ -726,7 +717,7 @@ mod tests {
 
     #[test]
     fn run() {
-        let curl = &["curl", "-v", "https://rust-lang.org"];
+        let curl = vec!["curl", "-v", "https://rust-lang.org"];
         let run = Run::from(curl);
         assert_eq!(run.params, ["curl", "-v", "https://rust-lang.org"]);
         assert_eq!(
@@ -737,7 +728,7 @@ mod tests {
 
     #[test]
     fn cmd() {
-        let curl = &["curl", "-v", "https://rust-lang.org"];
+        let curl = vec!["curl", "-v", "https://rust-lang.org"];
         let cmd = Cmd::from(curl);
         assert_eq!(cmd.params, ["curl", "-v", "https://rust-lang.org"]);
         assert_eq!(
@@ -886,7 +877,7 @@ mod tests {
 
     #[test]
     fn entrypoint() {
-        let curl = &["curl", "-v", "https://rust-lang.org"];
+        let curl = vec!["curl", "-v", "https://rust-lang.org"];
         let point = EntryPoint::from(curl);
         assert_eq!(point.params, ["curl", "-v", "https://rust-lang.org"]);
         assert_eq!(
@@ -953,7 +944,8 @@ mod tests {
     #[test]
     fn healthcheck() {
         // with params
-        let cmd = Cmd::from(&["curl", "-v", "https://rust-lang.org"]);
+        let curl = vec!["curl", "-v", "https://rust-lang.org"];
+        let cmd = Cmd::from(curl);
         let check = HealthCheck::Check {
             cmd,
             interval: Some(0),
@@ -970,7 +962,7 @@ mod tests {
 
     #[test]
     fn shell() {
-        let bash = &["bash", "-c"];
+        let bash = vec!["bash", "-c"];
         let shell = Shell::from(bash);
         assert_eq!(shell.params, ["bash", "-c"]);
         assert_eq!(shell.to_string(), r#"SHELL ["bash", "-c"]"#)
@@ -978,7 +970,8 @@ mod tests {
 
     #[test]
     fn onbuild() {
-        let cmd = Cmd::from(&["curl", "-v", "https://rust-lang.org"]);
+        let curl = vec!["curl", "-v", "https://rust-lang.org"];
+        let cmd = Cmd::from(curl);
         let onbuild = OnBuild::from(cmd);
         assert_eq!(
             onbuild.to_string(),
