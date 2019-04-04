@@ -12,15 +12,18 @@ matrix:
         - rust: nightly
 
 script:
-    - cargo build -v --all
-
-before_cache: |
-    if [[ "$TRAVIS_RUST_VERSION" == nightly ]]
-    then
-        RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin -f
-        cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID
-        cargo tarpaulin --out Xml
-        bash <(curl -s https://codecov.io/bash)
-    else
-        cargo test -v --all
-    fi
+    - |
+      if [[ "$TRAVIS_RUST_VERSION" == nightly ]]
+      then
+        cargo install grcov -f
+        export CARGO_INCREMENTAL=0
+        export RUSTFLAGS="-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Zno-landing-pads"
+      fi
+    - cargo test --all-targets
+    - |
+      if [[ "$TRAVIS_RUST_VERSION" == nightly ]]
+      then
+        zip -0 ccov.zip `find . \( -name "*.gc*" \) -print`;
+        grcov ccov.zip -s . -t lcov --llvm --branch --ignore-not-existing --ignore-dir "/*" > lcov.info;
+        bash <(curl -s https://codecov.io/bash) -f lcov.info;
+      fi
